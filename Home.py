@@ -35,16 +35,31 @@ if db_uri and openai_api_key:
         # Button to view schema
         if st.button("View Database Schema"):
             inspector = inspect(engine)
-            schema_info = []
-            for table_name in inspector.get_table_names():
-                columns = [{"name": col["name"], "type": str(col["type"])} 
-                           for col in inspector.get_columns(table_name)]
-                schema_info.append({"table": table_name, "columns": columns})
             
-            st.json(schema_info)
+            for table_name in inspector.get_table_names():
+                st.markdown(f"## {table_name}")
+                columns = inspector.get_columns(table_name)
+                
+                # Create rows with 3 columns each
+                for i in range(0, len(columns), 3):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        if i < len(columns):
+                            st.markdown(f"**{columns[i]['name']}**: {columns[i]['type']}")
+                    
+                    with col2:
+                        if i + 1 < len(columns):
+                            st.markdown(f"**{columns[i+1]['name']}**: {columns[i+1]['type']}")
+                    
+                    with col3:
+                        if i + 2 < len(columns):
+                            st.markdown(f"**{columns[i+2]['name']}**: {columns[i+2]['type']}")
+                
+                st.markdown("---")  # Add a separator between tables
 
         # Text input for natural language query
-        user_input = st.text_area("Enter your query in natural language:")
+        user_input = st.text_area("Enter your query in natural language:", key="user_input")
 
         # Button to generate SQL query
         if st.button("Generate SQL"):
@@ -53,20 +68,21 @@ if db_uri and openai_api_key:
                     # Generate SQL query
                     result = db_chain.invoke({"question": user_input})
                     
-                    # Display the generated SQL
-                    st.subheader("Generated SQL Query:")
-                    st.text_area("SQL Query", value=result, height=150)
-                    
                     # Store the generated SQL in session state
                     st.session_state.generated_sql = result
-                
+        
                 except Exception as e:
                     st.error(f"Error generating SQL: {str(e)}")
             else:
                 st.warning("Please enter a query.")
 
-        # Text area for SQL query (populated with generated SQL if available)
-        sql_query = st.text_area("SQL Query", value=st.session_state.get('generated_sql', ''), height=150)
+        # Display the generated SQL (if available)
+        if 'generated_sql' in st.session_state:
+            st.subheader("Generated SQL Query:")
+            st.text_area("SQL Query", value=st.session_state.generated_sql, height=150, key="generated_sql", disabled=True)
+
+        # Text area for SQL query (populated with generated SQL if available, or empty)
+        sql_query = st.text_area("SQL Query to Execute", value=st.session_state.get('generated_sql', ''), height=150, key="sql_query_input")
 
         # Button to execute SQL query
         if st.button("Execute SQL"):
