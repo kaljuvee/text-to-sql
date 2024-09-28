@@ -1,5 +1,6 @@
 import streamlit as st
-from langchain import SQLDatabase, SQLDatabaseChain
+from langchain.utilities import SQLDatabase
+from langchain.chains import create_sql_query_chain
 from langchain.llms import OpenAI
 from sqlalchemy import create_engine, inspect
 import pandas as pd
@@ -28,8 +29,8 @@ if db_uri and openai_api_key:
         # Create OpenAI language model
         llm = OpenAI(temperature=0, verbose=True)
         
-        # Create SQLDatabaseChain
-        db_chain = SQLDatabaseChain.from_llm(llm, db, verbose=True)
+        # Create SQL query chain
+        db_chain = create_sql_query_chain(llm, db)
 
         # Button to view schema
         if st.button("View Database Schema"):
@@ -50,7 +51,7 @@ if db_uri and openai_api_key:
             if user_input:
                 try:
                     # Generate SQL query
-                    result = db_chain.run(user_input)
+                    result = db_chain.invoke({"question": user_input})
                     
                     # Display the generated SQL
                     st.subheader("Generated SQL Query:")
