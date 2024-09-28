@@ -35,28 +35,21 @@ if db_uri and openai_api_key:
         # Button to view schema
         if st.button("View Database Schema"):
             inspector = inspect(engine)
+            table_names = inspector.get_table_names()
             
-            for table_name in inspector.get_table_names():
-                st.markdown(f"## {table_name}")
-                columns = inspector.get_columns(table_name)
+            # Create rows with 3 columns each
+            for i in range(0, len(table_names), 3):
+                col1, col2, col3 = st.columns(3)
                 
-                # Create rows with 3 columns each
-                for i in range(0, len(columns), 3):
-                    col1, col2, col3 = st.columns(3)
-                    
-                    with col1:
-                        if i < len(columns):
-                            st.markdown(f"**{columns[i]['name']}**: {columns[i]['type']}")
-                    
-                    with col2:
-                        if i + 1 < len(columns):
-                            st.markdown(f"**{columns[i+1]['name']}**: {columns[i+1]['type']}")
-                    
-                    with col3:
-                        if i + 2 < len(columns):
-                            st.markdown(f"**{columns[i+2]['name']}**: {columns[i+2]['type']}")
-                
-                st.markdown("---")  # Add a separator between tables
+                for j, col in enumerate([col1, col2, col3]):
+                    with col:
+                        if i + j < len(table_names):
+                            table_name = table_names[i + j]
+                            st.markdown(f"### {table_name}")
+                            columns = inspector.get_columns(table_name)
+                            for column in columns:
+                                st.markdown(f"**{column['name']}**: {column['type']}")
+                            st.markdown("---")  # Add a separator between tables
 
         # Text input for natural language query
         user_input = st.text_area("Enter your query in natural language:", key="user_input")
